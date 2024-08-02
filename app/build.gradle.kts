@@ -48,7 +48,7 @@ dependencies {
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
 
-    implementation ("com.google.android.filament:filament-android:1.6.0")
-    implementation ("com.google.android.filament:filament-utils-android:1.6.0")
-    implementation ("com.google.android.filament:gltfio-android:1.6.0")
+    implementation ("com.google.android.filament:filament-android:1.53.1")
+    implementation ("com.google.android.filament:filament-utils-android:1.53.1")
+    implementation ("com.google.android.filament:gltfio-android:1.53.1")
 }
