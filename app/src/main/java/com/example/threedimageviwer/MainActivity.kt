@@ -4,26 +4,17 @@ import android.annotation.SuppressLint
 import android.app.Activity
 import android.os.Bundle
 import android.util.Log
-import android.view.Choreographer
-import android.view.MotionEvent
-import android.view.SurfaceView
-import android.view.View
-import android.view.WindowManager
+import android.view.*
+import android.view.GestureDetector
 import android.widget.TextView
 import android.widget.Toast
-import androidx.appcompat.app.AppCompatActivity
 import com.google.android.filament.Fence
 import com.google.android.filament.IndirectLight
 import com.google.android.filament.Material
 import com.google.android.filament.Skybox
-import com.google.android.filament.utils.AutomationEngine
-import com.google.android.filament.utils.GestureDetector
-import com.google.android.filament.utils.HDRLoader
-import com.google.android.filament.utils.IBLPrefilterContext
-import com.google.android.filament.utils.KTX1Loader
-import com.google.android.filament.utils.ModelViewer
-import com.google.android.filament.utils.RemoteServer
-import com.google.android.filament.utils.Utils
+import com.google.android.filament.View
+import com.google.android.filament.View.OnPickCallback
+import com.google.android.filament.utils.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -37,7 +28,7 @@ import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
 import java.util.zip.ZipInputStream
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : Activity() {
 
     companion object {
         // Load the library for the utility layer, which in turn loads gltfio and the Filament core.
@@ -46,13 +37,12 @@ class MainActivity : AppCompatActivity() {
     }
 
     private lateinit var surfaceView: SurfaceView
-    private lateinit var titlebarHint: TextView
-
     private lateinit var choreographer: Choreographer
     private val frameScheduler = FrameCallback()
     private lateinit var modelViewer: ModelViewer
-//    private val doubleTapListener = DoubleTapListener()
-//    private val singleTapListener = SingleTapListener()
+    private lateinit var titlebarHint: TextView
+    private val doubleTapListener = DoubleTapListener()
+    private val singleTapListener = SingleTapListener()
     private lateinit var doubleTapDetector: GestureDetector
     private lateinit var singleTapDetector: GestureDetector
     private var remoteServer: RemoteServer? = null
@@ -70,12 +60,11 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
-        titlebarHint = findViewById(R.id.user_hint)
         surfaceView = findViewById(R.id.main_sv)
         choreographer = Choreographer.getInstance()
 
-//        doubleTapDetector = GestureDetector(applicationContext, doubleTapListener)
-//        singleTapDetector = GestureDetector(applicationContext, singleTapListener)
+        doubleTapDetector = GestureDetector(applicationContext, doubleTapListener)
+        singleTapDetector = GestureDetector(applicationContext, singleTapListener)
 
         modelViewer = ModelViewer(surfaceView)
         viewerContent.view = modelViewer.view
@@ -92,7 +81,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         createDefaultRenderables()
-//        createIndirectLight()
+        createIndirectLight()
 
         setStatusText("To load a new model, go to the above URL on your host machine.")
 
@@ -104,13 +93,13 @@ class MainActivity : AppCompatActivity() {
 
         // on mobile, better use lower quality color buffer
         view.renderQuality = view.renderQuality.apply {
-//            hdrColorBuffer = View.QualityLevel.MEDIUM
+            hdrColorBuffer = View.QualityLevel.MEDIUM
         }
 
         // dynamic resolution often helps a lot
         view.dynamicResolutionOptions = view.dynamicResolutionOptions.apply {
             enabled = true
-//            quality = View.QualityLevel.MEDIUM
+            quality = View.QualityLevel.MEDIUM
         }
 
         // MSAA is needed with dynamic resolution MEDIUM
@@ -119,7 +108,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         // FXAA is pretty cheap and helps a lot
-//        view.antiAliasing = View.AntiAliasing.FXAA
+        view.antiAliasing = View.AntiAliasing.FXAA
 
         // ambient occlusion is the cheapest effect that adds a lot of quality
         view.ambientOcclusionOptions = view.ambientOcclusionOptions.apply {
@@ -135,7 +124,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun createDefaultRenderables() {
-        val buffer = assets.open("city.glb").use { input ->
+        val buffer = assets.open("car.glb").use { input ->
             val bytes = ByteArray(input.available())
             input.read(bytes)
             ByteBuffer.wrap(bytes)
@@ -145,10 +134,10 @@ class MainActivity : AppCompatActivity() {
         updateRootTransform()
     }
 
-//    private fun createIndirectLight() {
-//        val engine = modelViewer.engine
-//        val scene = modelViewer.scene
-//        val ibl = "default_env"
+    private fun createIndirectLight() {
+        val engine = modelViewer.engine
+        val scene = modelViewer.scene
+        val ibl = "default_env"
 //        readCompressedAsset("envs/$ibl/${ibl}_ibl.ktx").let {
 //            scene.indirectLight = KTX1Loader.createIndirectLight(engine, it)
 //            scene.indirectLight!!.intensity = 30_000.0f
@@ -157,7 +146,7 @@ class MainActivity : AppCompatActivity() {
 //        readCompressedAsset("envs/$ibl/${ibl}_skybox.ktx").let {
 //            scene.skybox = KTX1Loader.createSkybox(engine, it)
 //        }
-//    }
+    }
 
     private fun readCompressedAsset(assetName: String): ByteBuffer {
         val input = assets.open(assetName)
@@ -313,7 +302,7 @@ class MainActivity : AppCompatActivity() {
                         Log.e(TAG, "Could not find '$uri' in zip using prefix '$prefix' and base path '${gltfPath!!}'")
                         setStatusText("Zip is missing $path")
                     }
-                    pathToBufferMapping[path]!!
+                    pathToBufferMapping[path]
                 }
             }
             updateRootTransform()
@@ -454,26 +443,26 @@ class MainActivity : AppCompatActivity() {
     }
 
     // Just for testing purposes, this releases the current model and reloads the default model.
-//    inner class DoubleTapListener : GestureDetector.SimpleOnGestureListener() {
-//        override fun onDoubleTap(e: MotionEvent): Boolean {
-//            modelViewer.destroyModel()
-//            createDefaultRenderables()
-//            return super.onDoubleTap(e)
-//        }
-//    }
+    inner class DoubleTapListener : GestureDetector.SimpleOnGestureListener() {
+        override fun onDoubleTap(e: MotionEvent): Boolean {
+            modelViewer.destroyModel()
+            createDefaultRenderables()
+            return super.onDoubleTap(e)
+        }
+    }
 
     // Just for testing purposes
-//    inner class SingleTapListener : GestureDetector.SimpleOnGestureListener() {
-//        override fun onSingleTapUp(event: MotionEvent): Boolean {
-//            modelViewer.view.pick(
-//                event.x.toInt(),
-//                surfaceView.height - event.y.toInt(),
-//                surfaceView.handler, {
-//                    val name = modelViewer.asset!!.getName(it.renderable)
-//                    Log.v("Filament", "Picked ${it.renderable}: " + name)
-//                },
-//            )
-//            return super.onSingleTapUp(event)
-//        }
-//    }
+    inner class SingleTapListener : GestureDetector.SimpleOnGestureListener() {
+        override fun onSingleTapUp(event: MotionEvent): Boolean {
+            modelViewer.view.pick(
+                event.x.toInt(),
+                surfaceView.height - event.y.toInt(),
+                surfaceView.handler, {
+                    val name = modelViewer.asset!!.getName(it.renderable)
+                    Log.v("Filament", "Picked ${it.renderable}: " + name)
+                },
+            )
+            return super.onSingleTapUp(event)
+        }
+    }
 }
