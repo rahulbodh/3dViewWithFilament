@@ -92,7 +92,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         createDefaultRenderables()
-        createIndirectLight()
+//        createIndirectLight()
 
         setStatusText("To load a new model, go to the above URL on your host machine.")
 
@@ -145,19 +145,19 @@ class MainActivity : AppCompatActivity() {
         updateRootTransform()
     }
 
-    private fun createIndirectLight() {
-        val engine = modelViewer.engine
-        val scene = modelViewer.scene
-        val ibl = "default_env"
-        readCompressedAsset("envs/$ibl/${ibl}_ibl.ktx").let {
-            scene.indirectLight = KTX1Loader.createIndirectLight(engine, it)
-            scene.indirectLight!!.intensity = 30_000.0f
-            viewerContent.indirectLight = modelViewer.scene.indirectLight
-        }
-        readCompressedAsset("envs/$ibl/${ibl}_skybox.ktx").let {
-            scene.skybox = KTX1Loader.createSkybox(engine, it)
-        }
-    }
+//    private fun createIndirectLight() {
+//        val engine = modelViewer.engine
+//        val scene = modelViewer.scene
+//        val ibl = "default_env"
+//        readCompressedAsset("envs/$ibl/${ibl}_ibl.ktx").let {
+//            scene.indirectLight = KTX1Loader.createIndirectLight(engine, it)
+//            scene.indirectLight!!.intensity = 30_000.0f
+//            viewerContent.indirectLight = modelViewer.scene.indirectLight
+//        }
+//        readCompressedAsset("envs/$ibl/${ibl}_skybox.ktx").let {
+//            scene.skybox = KTX1Loader.createSkybox(engine, it)
+//        }
+//    }
 
     private fun readCompressedAsset(assetName: String): ByteBuffer {
         val input = assets.open(assetName)
